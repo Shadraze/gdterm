@@ -63,6 +63,32 @@ var font_size_info = {
 	"hint_string" : "8,64,1"
 }
 
+enum INSTANCE_TYPE { MAIN, BOTTOM }
+var main_panel_switch_shortcut : Shortcut = Shortcut.new()
+var bottom_panel_toggle_shortcut : Shortcut = Shortcut.new()
+var bottom_panel_focus_shortcut : Shortcut = Shortcut.new()
+
+var main_panel_switch_info  = {
+	"name": "gdterm/main_panel_switch",
+	"type": TYPE_OBJECT,
+	"hint": PROPERTY_HINT_RESOURCE_TYPE,
+	"hint_string": "InputEventKey"
+}
+
+var bottom_panel_toggle_info  = {
+	"name": "gdterm/bottom_panel_toggle",
+	"type": TYPE_OBJECT,
+	"hint": PROPERTY_HINT_RESOURCE_TYPE,
+	"hint_string": "InputEventKey"
+}
+
+var bottom_panel_focus_info  = {
+	"name": "gdterm/bottom_panel_focus",
+	"type": TYPE_OBJECT,
+	"hint": PROPERTY_HINT_RESOURCE_TYPE,
+	"hint_string": "InputEventKey"
+}
+
 func _on_settings_changed():
 	var settings = EditorInterface.get_editor_settings()
 	
@@ -90,11 +116,33 @@ func _on_settings_changed():
 	var font_size : int = 14
 	if settings.has_setting("gdterm/font_size"):
 		font_size = settings.get_setting("gdterm/font_size")
+
+	var main_panel_switch : InputEventKey = InputEventKey.new()
+	main_panel_switch.ctrl_pressed = true
+	main_panel_switch.keycode = KEY_F6
+	if settings.has_setting("gdterm/main_panel_switch"):
+		main_panel_switch = settings.get_setting("gdterm/main_panel_switch")
+	
+	var bottom_panel_toggle : InputEventKey = InputEventKey.new()
+	bottom_panel_toggle.alt_pressed = true
+	bottom_panel_toggle.keycode = KEY_T
+	if settings.has_setting("gdterm/bottom_panel_toggle"):
+		bottom_panel_toggle = settings.get_setting("gdterm/bottom_panel_toggle")
+
+	var bottom_panel_focus : InputEventKey = InputEventKey.new()
+	bottom_panel_focus.ctrl_pressed = true
+	bottom_panel_focus.keycode = KEY_T
+	if settings.has_setting("gdterm/bottom_panel_focus"):
+		bottom_panel_focus = settings.get_setting("gdterm/bottom_panel_focus")
+
 	_apply_theme(theme)
 	_apply_initial_cmds(initial_cmds)
 	_apply_term_alt_meta_setting(send_alt_meta_as_esc)
 	_apply_font_setting(font, font_size)
 	_apply_layout(layout)
+	_apply_main_panel_switch(main_panel_switch)
+	_apply_bottom_panel_toggle(bottom_panel_toggle)
+	_apply_bottom_panel_focus(bottom_panel_focus)
 
 func _apply_theme(theme):
 	if current_theme != theme:
@@ -133,7 +181,7 @@ func _apply_theme(theme):
 			bottom_panel_instance.set_theme(active_theme)
 			bottom_panel_instance.theme_changed()
 		current_theme = theme
-	
+
 func _apply_layout(layout):
 	if current_layout != layout:
 		if layout == LAYOUT_MAIN or layout == LAYOUT_BOTH:
@@ -157,6 +205,11 @@ func _apply_layout(layout):
 				main_panel_instance.get_main().set_active(true)
 				main_panel_instance.visible = show_main
 				EditorInterface.get_editor_main_screen().add_child(main_panel_instance)
+
+				main_panel_instance.get_main().set_instance_type(INSTANCE_TYPE.MAIN)
+				main_panel_instance.get_main().set_main_panel_switch(main_panel_switch_shortcut, main_panel_instance)
+
+
 		if layout == LAYOUT_BOTTOM or layout == LAYOUT_BOTH:
 			if bottom_panel_instance == null:
 				bottom_panel_instance = BottomPanel.instantiate()
@@ -167,7 +220,17 @@ func _apply_layout(layout):
 					bottom_panel_instance.set_font_setting(active_font, active_font_size)
 					bottom_panel_instance.set_active(true)
 					bottom_panel_instance.theme_changed()
-				add_control_to_bottom_panel(bottom_panel_instance, "Terminal")
+				
+				var bottom_panel_button = add_control_to_bottom_panel(
+					bottom_panel_instance, 
+					"Terminal",
+					bottom_panel_toggle_shortcut
+					)
+
+				bottom_panel_instance.set_instance_type(INSTANCE_TYPE.BOTTOM)
+				bottom_panel_instance.set_bottom_panel_toggle(bottom_panel_button)
+				bottom_panel_instance.set_bottom_panel_focus(bottom_panel_focus_shortcut)
+
 		if layout == LAYOUT_MAIN:
 			if bottom_panel_instance != null:
 				remove_control_from_bottom_panel(bottom_panel_instance)
@@ -205,6 +268,15 @@ func _apply_font_setting(font : Font, font_size : int):
 			bottom_panel_instance.set_font_setting(font, font_size)
 		active_font = font
 		active_font_size = font_size
+
+func _apply_main_panel_switch(main_panel_switch : InputEventKey):
+	main_panel_switch_shortcut.events = [main_panel_switch]
+
+func _apply_bottom_panel_toggle(bottom_panel_toggle : InputEventKey):
+	bottom_panel_toggle_shortcut.events = [bottom_panel_toggle]
+
+func _apply_bottom_panel_focus(bottom_panel_focus : InputEventKey):
+	bottom_panel_focus_shortcut.events = [bottom_panel_focus]
 
 func _enter_tree() -> void:
 	var settings = EditorInterface.get_editor_settings()
@@ -250,6 +322,33 @@ func _enter_tree() -> void:
 	else:
 		settings.set_setting("gdterm/send_alt_meta_as_esc", alt_meta_setting)
 	_apply_term_alt_meta_setting(alt_meta_setting)
+	
+	var main_panel_switch : InputEventKey = InputEventKey.new()
+	main_panel_switch.ctrl_pressed = true
+	main_panel_switch.keycode = KEY_F6
+	if settings.has_setting("gdterm/main_panel_switch"):
+		main_panel_switch = settings.get_setting("gdterm/main_panel_switch")
+	else:
+		settings.set_setting("gdterm/main_panel_switch", main_panel_switch)
+	_apply_main_panel_switch(main_panel_switch)
+
+	var bottom_panel_toggle : InputEventKey = InputEventKey.new()
+	bottom_panel_toggle.alt_pressed = true
+	bottom_panel_toggle.keycode = KEY_T
+	if settings.has_setting("gdterm/bottom_panel_toggle"):
+		bottom_panel_toggle = settings.get_setting("gdterm/bottom_panel_toggle")
+	else:
+		settings.set_setting("gdterm/bottom_panel_toggle", bottom_panel_toggle)
+	_apply_bottom_panel_toggle(bottom_panel_toggle)
+
+	var bottom_panel_focus : InputEventKey = InputEventKey.new()
+	bottom_panel_focus.ctrl_pressed = true
+	bottom_panel_focus.keycode = KEY_T
+	if settings.has_setting("gdterm/bottom_panel_focus"):
+		bottom_panel_focus = settings.get_setting("gdterm/bottom_panel_focus")
+	else:
+		settings.set_setting("gdterm/bottom_panel_focus", bottom_panel_focus)
+	_apply_bottom_panel_focus(bottom_panel_focus)
 
 	# Make sure shows as enum
 	settings.add_property_info(theme_property_info)
@@ -258,6 +357,8 @@ func _enter_tree() -> void:
 	settings.add_property_info(send_alt_meta_as_esc_info)
 	settings.add_property_info(font_info)
 	settings.add_property_info(font_size_info)
+	settings.add_property_info(bottom_panel_toggle_info)
+	settings.add_property_info(bottom_panel_focus_info)
 	settings.settings_changed.connect(_on_settings_changed)
 	
 	# All the initial settings have been made, so make it active
@@ -304,3 +405,4 @@ func _get_plugin_name():
 
 func _get_plugin_icon():
 	return EditorInterface.get_editor_theme().get_icon("Node", "EditorIcons")
+
