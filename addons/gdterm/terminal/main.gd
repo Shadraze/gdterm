@@ -70,4 +70,3 @@ func add_offscreen_button_shortcut(
 	offscreen_control.add_child(offscreen_button)
 
 	parent_control.add_child(offscreen_control_parent)
-#	$Offsceen/Control.add_child(offscreen_button)
